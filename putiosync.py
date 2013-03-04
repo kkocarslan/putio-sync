@@ -92,8 +92,8 @@ def syncFiles(parent_id, target_base_folder):
       downloadUrl = client.request("/files/" + str(rfile["id"]) + "/download", return_url=True)
       print downloadUrl
       if downloadfile.downloadfile(downloadUrl, rfile["name"], target_base_folder, rfile["size"], BW_LIMIT):
-        #if os.path.getsize(target_base_folder + "/" + rfile["name"]) >= rfile["size"]:
-        markAsDownloaded(str(rfile["id"]) + "\n")
+        if os.path.getsize(target_base_folder + "/" + rfile["name"]) >= rfile["size"]:
+          markAsDownloaded(str(rfile["id"]) + "\n")
 
 
 if __name__=="__main__": 
