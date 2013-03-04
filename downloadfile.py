@@ -1,10 +1,4 @@
-import os
-import urllib2
-from datetime import timedelta
-import datetime
-import signal
 import sys
-import fcntl
 import subprocess
 
 def downloadfile(url, file_name, target_dir, size_expected, limit_rate):
