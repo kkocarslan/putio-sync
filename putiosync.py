@@ -98,7 +98,6 @@ def syncFiles(parent_id, target_base_folder):
 
 if __name__=="__main__": 
   signal.signal(signal.SIGINT, signal_handler)
-  signal.signal(signal.SIGKILL, signal_handler)
   client = putio2.Client(OAUTH_KEY)
   sourceDirId = getSourceDirId()
   syncFiles(sourceDirId, LOCAL_TARGETDIR)
