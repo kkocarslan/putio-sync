@@ -1,0 +1,4 @@
+[putiosync]
+OAUTH_KEY=
+PUTIO_SOURCEDIR=PutioSync
+LOCAL_TARGETDIR=/home/eodabas/PutioSync
