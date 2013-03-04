@@ -7,11 +7,11 @@ import sys
 import fcntl
 import subprocess
 
-def downloadfile(url, file_name, target_dir, size_expected):
+def downloadfile(url, file_name, target_dir, size_expected, limit_rate):
   try:
     #options = "-t 10 --max-connection-per-server=4 --file-allocation=falloc --max-download-limit=900K -c -s 4 --summary-interval=20 --lowest-speed-limit=100K"
     #retcode = subprocess.call("/usr/bin/aria2c " + options + " \"" + url + "\" -d \"" + target_dir + "\" -o \"" + file_name + "\"", shell=True)
-    options = "--continue --limit-rate=1500k --progress=dot:mega"
+    options = "--continue --limit-rate=" + limit_rate + " --progress=dot:mega"
     cmd = "/usr/bin/wget " + options + " '" + url + "' -O '" + target_dir + "/" + file_name+"' 2>&1"
     print cmd
     retcode = subprocess.call(cmd, shell=True)
