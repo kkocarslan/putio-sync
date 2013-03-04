@@ -1,5 +1,6 @@
 import sys
 import subprocess
+import atexit
 
 def downloadfile(url, file_name, target_dir, size_expected, limit_rate):
   try:
@@ -8,7 +9,10 @@ def downloadfile(url, file_name, target_dir, size_expected, limit_rate):
     options = "--continue --limit-rate=" + limit_rate + " --progress=dot:mega"
     cmd = "env wget " + options + " '" + url + "' -O '" + target_dir + "/" + file_name+"' 2>&1"
     print cmd
-    retcode = subprocess.call(cmd, shell=True)
+    #retcode = subprocess.call(cmd, shell=True)
+    popen = subprocess.Popen(cmd, shell=True)
+    atexit.register(stopdownload, popen)
+    retcode = popen.wait()
     if retcode == 0:
       print >>sys.stderr, "Child returned", retcode
       return True
@@ -19,4 +23,7 @@ def downloadfile(url, file_name, target_dir, size_expected, limit_rate):
     print >>sys.stderr, "Execution failed:", e
     return False
   
-   
+def stopdownload(popen):
+  print "stopping download"
+  popen.send_signal(2)
+  #popen.kill()
