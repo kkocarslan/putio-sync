@@ -37,4 +37,5 @@ nosetests.xml
 # uu baby
 config.ini
 files.db
+files.sqlite
 *.log

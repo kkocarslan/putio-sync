@@ -10,6 +10,7 @@ import downloadfile
 from pprint import pprint
 import argparse
 import ConfigParser
+import dbconn
 
 #
 # parse arguments
@@ -62,18 +63,12 @@ def getSourceDirId():
     return False
 
 def checkIfDownloaded(fileId):
-  dbFile = os.path.dirname(os.path.realpath(__file__)) + "/files.db"
-  if not os.path.exists(dbFile):
-    return False
-  if fileId in [l.rstrip('\n') for l in open(dbFile, 'r+').readlines()]:
-    return True
-  else:
-    return False
+  return dbconn.checkFileId(fileId)
 
 def markAsDownloaded(fileId):
-  dbFile = os.path.dirname(os.path.realpath(__file__)) + "/files.db"
-  db = open(dbFile, 'a+b')
-  db.write(fileId)
+  return dbconn.insertFileId(fileId)
+
+
 
 def syncFiles(parent_id, target_base_folder):
   rfiles = client.request("/files/list?parent_id=" + str(parent_id))["files"]
