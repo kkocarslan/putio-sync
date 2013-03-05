@@ -85,7 +85,7 @@ def syncFiles(parent_id, target_base_folder):
     else:
       infoLine = target_base_folder + "/" + rfile["name"] + " (filesize: " + str(rfile["size"]) +  ", crc32: " + rfile["crc32"] + ", Type: " + rfile["content_type"] + ")"
       if checkIfDownloaded(str(rfile["id"])):
-        print "\nSkipping: " + infoLine 
+        #print "\nSkipping: " + infoLine 
         continue
       else:
         print "\nStarting: " + infoLine 
