@@ -2,3 +2,9 @@
 OAUTH_KEY=
 PUTIO_SOURCEDIR=PutioSync
 LOCAL_TARGETDIR=/home/eodabas/PutioSync
+
+REPORT_FROM=syncreport@example.com
+REPORT_TO=johndoe@example.com
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=
+SMTP_PASS=

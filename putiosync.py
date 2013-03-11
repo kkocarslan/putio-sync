@@ -11,6 +11,7 @@ from pprint import pprint
 import argparse
 import ConfigParser
 import dbconn
+import mailsender
 
 #
 # parse arguments
@@ -29,6 +30,11 @@ try:
   OAUTH_KEY = config.get('putiosync', 'OAUTH_KEY')
   PUTIO_SOURCEDIR = config.get('putiosync', 'PUTIO_SOURCEDIR')
   LOCAL_TARGETDIR = config.get('putiosync', 'LOCAL_TARGETDIR')
+  REPORT_FROM = config.get('putiosync', 'REPORT_FROM')
+  REPORT_TO   = config.get('putiosync', 'REPORT_TO')
+  SMTP_HOST   = config.get('putiosync', 'SMTP_HOST')
+  SMTP_USER   = config.get('putiosync', 'SMTP_USER')
+  SMTP_PASS   = config.get('putiosync', 'SMTP_PASS')
 except Exception, e:
   print "Error reading config.ini"
   print e
@@ -58,9 +64,18 @@ def signal_handler(signal, frame):
 #
 def getSourceDirId():
   try:
-    return filter(lambda x: x["parent_id"] == 0, client.request("/files/search/\"" + PUTIO_SOURCEDIR  + "\" from:me type:directory/page/-1")["files"])[0]['id']
-  except:
-    return False
+    dirs = client.request("/files/search/\"" + PUTIO_SOURCEDIR + "\" from:me type:directory/page/-1")["files"]
+    dirs = filter(lambda x: x["name"] == PUTIO_SOURCEDIR, dirs)
+    dirs = filter(lambda x: x["parent_id"] == 0, dirs)
+    sourceid = dirs[0]['id']
+    if not sourceid > 0:
+      print "Unable to get source dir id"
+      sys.exit(1)
+    else:
+      return sourceid
+  except Exception, e:
+    print "Unable to get source dir id:", e
+    sys.exit(1)
 
 def checkIfDownloaded(fileId):
   return dbconn.checkFileId(fileId)
@@ -89,6 +104,10 @@ def syncFiles(parent_id, target_base_folder):
       if downloadfile.downloadfile(downloadUrl, rfile["name"], target_base_folder, rfile["size"], BW_LIMIT):
         if os.path.getsize(target_base_folder + "/" + rfile["name"]) >= rfile["size"]:
           markAsDownloaded(str(rfile["id"]) + "\n")
+          subj = "[PutioSync] Download complete: " + rfile["name"]
+          msg = target_base_folder + "/" + rfile["name"] + "\n\n filesize: " + str(rfile["size"]) +  "\n crc32: " + rfile["crc32"] + "\n Type: " + rfile["content_type"] + ""
+          mailsender.sendMail(REPORT_FROM, REPORT_TO, SMTP_HOST, SMTP_USER, SMTP_PASS, subj, msg)
+
 
 
 if __name__=="__main__": 
