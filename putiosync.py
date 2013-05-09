@@ -87,18 +87,19 @@ def markAsDownloaded(fileId):
 
 def syncFiles(parent_id, target_base_folder):
   rfiles = client.request("/files/list?parent_id=" + str(parent_id))["files"]
-  if not os.path.isdir(target_base_folder):
-    os.mkdir(target_base_folder)
   for rfile in rfiles:
+    rfile["name"] = rfile["name"].replace(":", " ")
     if rfile["content_type"] == "application/x-directory":
       syncFiles(rfile["id"], target_base_folder + "/" + rfile["name"])
     else:
       infoLine = target_base_folder + "/" + rfile["name"] + " (filesize: " + str(rfile["size"]) +  ", crc32: " + rfile["crc32"] + ", Type: " + rfile["content_type"] + ")"
       if checkIfDownloaded(str(rfile["id"])):
-        #print "\nSkipping: " + infoLine 
+        print "\nSkipping: " + infoLine 
         continue
       else:
         print "\nStarting: " + infoLine 
+        if not os.path.isdir(target_base_folder):
+          os.mkdir(target_base_folder)
       downloadUrl = client.request("/files/" + str(rfile["id"]) + "/download", return_url=True)
       print downloadUrl
       if downloadfile.downloadfile(downloadUrl, rfile["name"], target_base_folder, rfile["size"], BW_LIMIT):
