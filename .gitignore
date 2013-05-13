@@ -39,3 +39,6 @@ config.ini
 files.db
 files.sqlite
 *.log
+
+# vim swap
+.*.swp
