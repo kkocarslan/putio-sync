@@ -16,6 +16,7 @@ from name_parser.parser import NameParser, InvalidNameException
 import string
 import fnmatch
 import tvdb_api
+import tmdb
 
 #
 # shares fix
@@ -184,8 +185,11 @@ def syncFiles(parent_id, target_base_folder):
         print "==>> mv \"" + target_base_folder + "/" + rfile["name"] + "\" \"" + fileTargetFolder + "/" + rfile["name"] + "\""
         if not os.path.isdir(fileTargetFolder): os.makedirs(fileTargetFolder)
         os.renames(target_base_folder + "/" + rfile["name"], fileTargetFolder + "/" + rfile["name"])
-      else:
+        continue
+      movie = tmdb.isAMovie(rfile["name"])
+      if movie != False:
         fileTargetFolder = MOVIES_BASEDIR
+        print "Movie Name.....: " + movie["title"]
         print "Moving State...: To " + fileTargetFolder
         print "==>> mv \"" + target_base_folder + "/" + rfile["name"] + "\" \"" + fileTargetFolder + "/" + rfile["name"] + "\""
         if not os.path.isdir(fileTargetFolder): os.makedirs(fileTargetFolder)
