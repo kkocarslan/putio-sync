@@ -8,8 +8,8 @@ def parseFileName(filename):
   data = {}
   try:
     filename_c = re.sub("[^\w\n]+|_+", " ", filename, flags=re.UNICODE)
-    data["moviename"] = re.sub("(.*)\s*((?:19|20)[0-9]{2})\s+.*", "\\1", filename_c)
-    data["movieyear"] = re.sub(".*\s*((?:19|20)[0-9]{2})\s+.*", "\\1", filename_c)
+    data["moviename"] = re.sub("(.*)\s*((?:19|20)[0-9]{2})(\s|$)+.*", "\\1", filename_c).strip()
+    data["movieyear"] = re.sub(".*\s*((?:19|20)[0-9]{2})(\s|$)+.*", "\\1", filename_c).strip()
     if data["movieyear"] == filename_c: return False
     return data
   except Exception, e:
