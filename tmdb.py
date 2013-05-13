@@ -36,7 +36,7 @@ def isAMovie(filename):
   try:
     parsedFileName = parseFileName(filename)
     queryRes = queryMovie(parsedFileName["moviename"], parsedFileName["movieyear"])
-    if queryRes != False: return queryRes[0]
+    if queryRes != False: return queryRes["results"][0]
     else: return False
   except Exception, e:
     print Exception, e
