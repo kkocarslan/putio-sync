@@ -3,6 +3,9 @@ OAUTH_KEY=
 PUTIO_SOURCEDIR=PutioSync
 LOCAL_TARGETDIR=/home/eodabas/PutioSync
 
+TVSHOWS_BASEDIR=/home/eodabas/Shared Videos/Tv Shows
+MOVIES_BASEDIR=/home/eodabas/Shared Videos/Movies
+
 REPORT_FROM=syncreport@example.com
 REPORT_TO=johndoe@example.com
 SMTP_HOST=smtp.gmail.com

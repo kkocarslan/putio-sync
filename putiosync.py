@@ -12,6 +12,15 @@ import argparse
 import ConfigParser
 import dbconn
 import mailsender
+from name_parser.parser import NameParser, InvalidNameException
+import string
+import fnmatch
+import tvdb_api
+
+#
+# shares fix
+#
+os.setgid(1000)
 
 #
 # parse arguments
@@ -30,6 +39,8 @@ try:
   OAUTH_KEY = config.get('putiosync', 'OAUTH_KEY')
   PUTIO_SOURCEDIR = config.get('putiosync', 'PUTIO_SOURCEDIR')
   LOCAL_TARGETDIR = config.get('putiosync', 'LOCAL_TARGETDIR')
+  TVSHOWS_BASEDIR = config.get('putiosync', 'TVSHOWS_BASEDIR')
+  MOVIES_BASEDIR = config.get('putiosync', 'MOVIES_BASEDIR')
   REPORT_FROM = config.get('putiosync', 'REPORT_FROM')
   REPORT_TO   = config.get('putiosync', 'REPORT_TO')
   SMTP_HOST   = config.get('putiosync', 'SMTP_HOST')
@@ -50,6 +61,12 @@ try:
 except IOError:
   print "Already running"
   sys.exit(1)
+
+#
+# initiate NameParser
+#
+np = NameParser(True)
+tvdb = tvdb_api.Tvdb()
 
 
 #
@@ -83,6 +100,30 @@ def checkIfDownloaded(fileId):
 def markAsDownloaded(fileId):
   return dbconn.insertFileId(fileId)
 
+#
+# parse tv show name
+#
+def parseTvShowName(filename):
+  res = {}
+  try:
+    parsed = np.parse(filename)
+    series_name = string.capwords(parsed.series_name.lower())
+    show = tvdb[series_name]
+    res["series_name"] = show.data["seriesname"]
+    res["season_number"] = "%02d" % (parsed.season_number,)
+    return res 
+  except:
+    return False
+
+def isThereUnfinishedDownloads(cdir):
+  try:
+    matches = []
+    for root, dirnames, filenames in os.walk(cdir):
+      for filename in fnmatch.filter(filenames, '*.part'):
+        return True
+    return False
+  except:
+    return True
 
 
 def syncFiles(parent_id, target_base_folder):
@@ -92,22 +133,64 @@ def syncFiles(parent_id, target_base_folder):
     if rfile["content_type"] == "application/x-directory":
       syncFiles(rfile["id"], target_base_folder + "/" + rfile["name"])
     else:
-      infoLine = target_base_folder + "/" + rfile["name"] + " (filesize: " + str(rfile["size"]) +  ", crc32: " + rfile["crc32"] + ", Type: " + rfile["content_type"] + ")"
+      infoLine = ("\n"
+                 "\nTarget.......: " + target_base_folder + "/" + rfile["name"] + ""
+                 "\nFilesize.....: " + str(rfile["size"]) + ""
+                 "\nCRC32........: " + rfile["crc32"] + ""
+                 "\nContent-Type.: " + rfile["content_type"] + "")
+      print infoLine
       if checkIfDownloaded(str(rfile["id"])):
-        print "\nSkipping: " + infoLine 
-        continue
+        print "Status.......: Already downloaded" 
       else:
-        print "\nStarting: " + infoLine 
+        print "Status.......: Starting/continuing to download" 
         if not os.path.isdir(target_base_folder):
           os.mkdir(target_base_folder)
-      downloadUrl = client.request("/files/" + str(rfile["id"]) + "/download", return_url=True)
-      print downloadUrl
-      if downloadfile.downloadfile(downloadUrl, rfile["name"], target_base_folder, rfile["size"], BW_LIMIT):
-        if os.path.getsize(target_base_folder + "/" + rfile["name"]) >= rfile["size"]:
-          markAsDownloaded(str(rfile["id"]) + "\n")
-          subj = "[PutioSync] Download complete: " + rfile["name"]
-          msg = target_base_folder + "/" + rfile["name"] + "\n\n filesize: " + str(rfile["size"]) +  "\n crc32: " + rfile["crc32"] + "\n Type: " + rfile["content_type"] + ""
-          mailsender.sendMail(REPORT_FROM, REPORT_TO, SMTP_HOST, SMTP_USER, SMTP_PASS, subj, msg)
+        downloadUrl = client.request("/files/" + str(rfile["id"]) + "/download", return_url=True)
+        print downloadUrl
+        if downloadfile.downloadfile(downloadUrl, rfile["name"], target_base_folder, rfile["size"], BW_LIMIT):
+          if os.path.getsize(target_base_folder + "/" + rfile["name"]) >= rfile["size"]:
+            markAsDownloaded(str(rfile["id"]) + "\n")
+            subj = "[PutioSync] Download complete: " + rfile["name"]
+            mailsender.sendMail(REPORT_FROM, REPORT_TO, SMTP_HOST, SMTP_USER, SMTP_PASS, subj, infoLine)
+
+    # !!!!!!!
+    # before doing actual work
+    # make sure file is downloaded, and directory is created
+    #
+    #print "======> " + str(parent_id) + ":" + str(sourceDirId)
+    if str(parent_id) == str(sourceDirId):
+      #
+      # continue if path is moved before or not exists at all
+      #
+      if not os.path.exists(target_base_folder + "/" + rfile["name"]):
+        print "Move State...: Already moved to library"
+        continue
+      #
+      # continue if it is a directory and there are .part files in it
+      #
+      if os.path.isdir(target_base_folder + "/" + rfile["name"]):
+        if isThereUnfinishedDownloads(target_base_folder + "/" + rfile["name"]):
+          print "Move State...: Unfinised files exists"
+          continue
+
+      #
+      # mv finished downloads to library (assumption is: if not a tvshow, then it should be a movie)
+      #
+      tvshow = parseTvShowName(rfile["name"])
+      if tvshow != False:
+        print "Series Name....: " + tvshow["series_name"]
+        fileTargetFolder = TVSHOWS_BASEDIR + "/" + tvshow["series_name"] + "/" + str(tvshow["season_number"])
+        print "Moving State...: To " + fileTargetFolder
+        print "==>> mv \"" + target_base_folder + "/" + rfile["name"] + "\" \"" + fileTargetFolder + "/" + rfile["name"] + "\""
+        if not os.path.isdir(fileTargetFolder): os.makedirs(fileTargetFolder)
+        os.renames(target_base_folder + "/" + rfile["name"], fileTargetFolder + "/" + rfile["name"])
+      else:
+        fileTargetFolder = MOVIES_BASEDIR
+        print "Moving State...: To " + fileTargetFolder
+        print "==>> mv \"" + target_base_folder + "/" + rfile["name"] + "\" \"" + fileTargetFolder + "/" + rfile["name"] + "\""
+        if not os.path.isdir(fileTargetFolder): os.makedirs(fileTargetFolder)
+        os.renames(target_base_folder + "/" + rfile["name"], fileTargetFolder + "/" + rfile["name"])
+
 
 
 
