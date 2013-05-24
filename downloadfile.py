@@ -14,7 +14,7 @@ def downloadfile(url, file_name, target_dir, size_expected, limit_rate):
     #retcode = subprocess.call("/usr/bin/aria2c " + options + " \"" + url + "\" -d \"" + target_dir + "\" -o \"" + file_name + "\"", shell=True)
     options = "--continue --limit-rate=" + limit_rate + " --progress=dot:mega"
     wgetcmd = "len=0 env wget " + options + " '" + url + "' -O \"" + target_dir + "/" + file_name_tmp + "\" 2>&1"
-    pipecmd = "while read line; do echo \"$line\"; let \"len+=1\"; [ $(expr $len % 20) -eq 0 ] && echo  \"\n---------------\n" + file_name + "\n---------------\n\"; done"
+    pipecmd = "while read line; do echo \"$line\"; len=$((len+1)); [ $(expr $len % 20) -eq 0 ] && echo  \"\n---------------\n" + file_name + "\n---------------\n\"; done"
     print wgetcmd
     wgetpopen = subprocess.Popen(wgetcmd, shell=True, stdout=subprocess.PIPE)
     pipepopen = subprocess.Popen(pipecmd, shell=True, stdin=wgetpopen.stdout)
